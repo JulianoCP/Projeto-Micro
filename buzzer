@@ -1,0 +1,36 @@
+const int buzzer = 7; //Constante armazenando o número do pino que vamos utilizar
+/* 
+buzzer    arduino
+positivo  7
+negativo  gnd
+*/
+void setup() {
+  /*
+    Informamos que ao pino 8 será de saída.
+  */
+  pinMode(buzzer,OUTPUT);
+}
+ 
+void loop() { 
+  /* Ligamos o buzzer com uma frequencia de 1500hz*/
+  //1 beep quando ligar
+  tone(buzzer,2500);
+  delay(500);
+  noTone(buzzer);
+  
+  //2 beeps quando desligar
+  tone(buzzer,2500);
+  delay(500);
+  noTone(buzzer);
+  delay(200);
+  tone(buzzer,2500);  
+  delay(500); 
+  noTone(buzzer);
+ /*Em delay esperamos um segundo para avançar para a próxima linha*/
+ 
+  
+  /*Desligamos o Buzzer*/
+   
+  delay(1000);
+ /*Esperamos um segundo para finalizar o método*/
+}
