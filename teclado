@@ -1,6 +1,13 @@
-/ Projeto: Acionamento de teclas no teclado matricial 4x4
+// Projeto: Acionamento de teclas no teclado matricial 4x4
 // Autor: Baú da Eletrônica (www.baudaeletronica.com.br)
- 
+
+/*
+teclado         arduino
+linha1 preto    6
+coluna5 azul    5
+coluna6 verde   4
+coluna7 amarelo 3
+*/
  
 //incluindo a biblioteca do teclado matricial
 #include <Keypad.h>
