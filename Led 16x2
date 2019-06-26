@@ -1,6 +1,19 @@
-//Programa: Teste de Display LCD 16 x 2
-//Autor: FILIPEFLOP
- 
+/*
+lcd        uno
+14 cinza   13
+13 rosa    12
+12 azul    11
+11 verde   10
+6 amarelo  9
+4 laranja  8
+5 amarelo  gnd
+3 cinza    potenciometro
+2 vermelho 5v
+1 marrom   gnd
+15 branco  5v
+16 preto   gnd
+*/
+
 //Carrega a biblioteca LiquidCrystal
 #include <LiquidCrystal.h>
  
