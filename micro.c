@@ -1,13 +1,12 @@
+#include <Wire.h>
+#include <DS3231.h>
 #include <LiquidCrystal.h>
 #include <Keypad.h>
-#include <DS1307.h>
 
 #define pino_sinal_analogico A0
 #define motor 2
 #define ledGreen A1
 #define ledRed A2
-
-
 
 
 int valor_analogico;
@@ -26,74 +25,105 @@ char matrizteclado[linhas][colunas] = {
 };
 
 LiquidCrystal lcd(8, 9, 10, 11, 12, 13);
-DS1307 rtc(A4, A3);
+DS3231 RTC;              
+RTCDateTime data;
 byte pinoslinhas[linhas] = {6}; //pinos utilizados nas linhas
 byte pinoscolunas[colunas] = {5,4,3}; //pinos utilizados nas colunas
 Keypad teclado = Keypad( makeKeymap(matrizteclado), pinoslinhas, pinoscolunas, linhas, colunas );
 
 void setup()
 {
-    //rtc.setDOW(FRIDAY);      //Define o dia da semana
-    //rtc.setTime(16, 16, 0);     //Define o horario
-    //rtc.setDate(12, 6, 2019);   //Define o dia, mes e ano
-    rtc.halt(false);
-    Serial.begin(9600);
+    //Serial.begin(9600);
     pinMode(pino_sinal_analogico, INPUT);
     pinMode(motor, OUTPUT); //bomba
     pinMode(buzzer, OUTPUT);
     pinMode(ledGreen,OUTPUT);
     pinMode(ledRed,OUTPUT);
     lcd.begin(16, 2);
+    RTC.begin();            
+    RTC.setDateTime(__DATE__, __TIME__);
     Serial.begin(9600);
     Serial.println("Pressione uma tecla");
-    rtc.setSQWRate(SQW_RATE_1);
-    rtc.enableSQW(true);
+    
 }
 
 void loop()
 {
     //Le o valor do pino A0 do sensor
-    lcd.clear();
+    //lcd.clear();
+    data = RTC.getDateTime();      
     valor_analogico = analogRead(pino_sinal_analogico);
     char apertatecla = teclado.getKey();
     lcd.setCursor(2, 0);
     lcd.print("Umidade:");
     float x = valor_analogico/1000.0;
     lcd.print(x);
-
+    lcd.print("%");
+    int h, m;
+    h = data.hour;
+    m = data.minute;
     if (apertatecla) {
+      
         if(apertatecla == '1'){
-            vetHora[0] += 10;
-            lcd.clear();
+          lcd.setCursor(2, 1);
+            vetHora[0] += 1;
+            if(vetHora[0]==24){
+              vetHora[0]=0;
+            }
             lcd.print(vetHora[0]);
             lcd.print(":");
             lcd.print(vetHora[1]);
-            delay(1000);
+            delay(200);
+            lcd.print("               ");
         }
         else if(apertatecla == '2'){
-            vetHora[1] += 10;
-            lcd.clear();
+          
+         lcd.setCursor(2, 1);
+            vetHora[1] += 5;
+            if (vetHora[1] == 60){
+              vetHora[1]=0;
+              //vetHora[0]+=1;
+            }
+            
             lcd.print(vetHora[0]);
             lcd.print(":");
             lcd.print(vetHora[1]);
-            delay(1000);
+            delay(200);
+            lcd.print("               ");
         }
         else if(apertatecla == '3'){
-            lcd.clear();
+            
+            //lcd.clear();
+            lcd.setCursor(2, 1);
             lcd.print("Hora : ");
-            //char *x = rtc.getTimeStr();
-            //lcd.print(x[0]);
-            lcd.print(rtc.getTimeStr());
+            lcd.print(vetHora[0]);
+            lcd.print(":");
+            lcd.print(vetHora[1]);
+
+            //lcd.print(data.hour);     
+            //Serial.print("-");
+            //Serial.print(data.month);    
+            //Serial.print("-");
+            //Serial.print(data.day);      
+            //Serial.print(" ");
+            //Serial.print(data.hour);     
+            //Serial.print(":");
+            //Serial.print(data.minute);   
+            //Serial.print(":");
+            //Serial.print(data.second);   
+            //Serial.println("");
 
             //Aguarda 1 segundo e repete o processo
-            delay (3000);
-           
+            delay (1000);        
         }
-        else{
-            lcd.print("sqwiejhqwe");
-        }
+       
     }
-
+    if (h == vetHora[0] && m == vetHora[1]){
+         lcd.setCursor(2, 1);
+         lcd.print("ta na hora");   
+         delay (1000);
+         lcd.clear();                             
+    }
 
     //Solo umido, acende o led verde
     if (valor_analogico > 0 && valor_analogico < 400)
