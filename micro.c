@@ -2,6 +2,7 @@
 #include <DS3231.h>
 #include <LiquidCrystal.h>
 #include <Keypad.h>
+#include <EEPROM.h>
 
 #define pino_sinal_analogico A0
 #define motor 2
@@ -23,7 +24,8 @@ char matrizteclado[linhas][colunas] = {
   {'7', '8', '9', 'C'},
   {'*', '0', '#', 'D'}
 };
-
+int i = 0;
+//i = EEPROM.read(0);
 LiquidCrystal lcd(8, 9, 10, 11, 12, 13);
 DS3231 RTC;              
 RTCDateTime data;
@@ -31,30 +33,58 @@ byte pinoslinhas[linhas] = {6}; //pinos utilizados nas linhas
 byte pinoscolunas[colunas] = {5,4,3}; //pinos utilizados nas colunas
 Keypad teclado = Keypad( makeKeymap(matrizteclado), pinoslinhas, pinoscolunas, linhas, colunas );
 
+
+
+void Menu(char x){
+    
+    if(x == '1'){
+      String t = Serial.readStringUntil('\n');
+      Serial.print(t); 
+      
+      
+      /*if(Serial.available()){
+        while(Serial.available()>0){
+          Serial.print(char(Serial.read()));
+        }
+      } */
+      
+    }
+    else if (x=='2'){
+      
+    }
+    
+}
+
+
 void setup()
 {
-    //Serial.begin(9600);
+    Serial.begin(9600);
+    Serial.print("[1] = PARA CONFIGURAR A HORA DE IRRIGACAO \n");
+    Serial.print("[2] = PARA VER O LOG\n");
+
+
+    
     pinMode(pino_sinal_analogico, INPUT);
     pinMode(motor, OUTPUT); //bomba
     pinMode(buzzer, OUTPUT);
     pinMode(ledGreen,OUTPUT);
     pinMode(ledRed,OUTPUT);
     lcd.begin(16, 2);
-    RTC.begin();            
+    RTC.begin();
     RTC.setDateTime(__DATE__, __TIME__);
-    Serial.begin(9600);
-    Serial.println("Pressione uma tecla");
     
 }
 
 void loop()
 {
+    
     //Le o valor do pino A0 do sensor
     //lcd.clear();
-    data = RTC.getDateTime();      
+    data = RTC.getDateTime();
     valor_analogico = analogRead(pino_sinal_analogico);
     char apertatecla = teclado.getKey();
     lcd.setCursor(2, 0);
+    
     lcd.print("Umidade:");
     float x = valor_analogico/1000.0;
     lcd.print(x);
@@ -62,9 +92,17 @@ void loop()
     int h, m;
     h = data.hour;
     m = data.minute;
+
+    char opc = char(Serial.read());
+    if (opc == '1' || opc == '2'){
+      
+      Menu(opc);
+    }
+    
     if (apertatecla) {
       
         if(apertatecla == '1'){
+          
           lcd.setCursor(2, 1);
             vetHora[0] += 1;
             if(vetHora[0]==24){
@@ -132,6 +170,26 @@ void loop()
 
         if (ligado == 0)
         {
+            
+            int j = 0;
+            int x = data.hour;
+            int y = data.minute;
+            char p[50];
+            sprintf(p,"Bomba Desligadu %d:%d Horas",x ,y);
+            while(p[j] != '\0'){
+                EEPROM.write(i+1, p[j]);
+                j++;
+                i++;
+            }
+            i++;
+            EEPROM.write(i,'\n');
+            j = 1;
+            while(j <= i){
+              Serial.print(char(EEPROM.read(j)));
+              j++;
+            }
+            EEPROM.write(0,i);
+            Serial.print('\n');
             digitalWrite(ledRed, LOW);
             digitalWrite(ledGreen, HIGH);
             ligado = 1;
@@ -146,9 +204,28 @@ void loop()
     if (valor_analogico > 800 && valor_analogico < 1024)
     {
         digitalWrite(motor, HIGH); //bomba
-
+        
         if (ligado == 1)
         {
+            int j = 0;
+            int x = data.hour;
+            int y = data.minute;
+            char p[50];
+            sprintf(p,"Bomba Ligado %d:%d Horas",x ,y);
+            while(p[j] != '\0'){
+                EEPROM.write(i+1, p[j]);
+                j++;
+                i++;
+            }
+            i++;
+            EEPROM.write(i,'\n');
+            j = 1;
+            while(j <= i){
+              Serial.print(char(EEPROM.read(j)));
+              j++;
+            }
+            EEPROM.write(0,i);
+            Serial.print('\n');
             digitalWrite(ledRed, HIGH);
             digitalWrite(ledGreen, LOW);
             ligado = 0;
