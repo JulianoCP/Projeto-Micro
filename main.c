@@ -33,31 +33,37 @@ byte pinoslinhas[linhas] = {6}; //pinos utilizados nas linhas
 byte pinoscolunas[colunas] = {5, 4, 3}; //pinos utilizados nas colunas
 Keypad teclado = Keypad(makeKeymap(matrizteclado), pinoslinhas, pinoscolunas, linhas, colunas);
 
+void serialFlush(){
+  while(Serial.available() > 0){
+    char t = Serial.read();
+  }
+}
 
 void Menu(char opc,bool valor){
+serialFlush();
+if(opc == '1') Serial.print("DEFINA A HORA: ");
+ 
 while(valor == true){
 
     if(opc == '1'){
         // definir horario de irrigaçao
-        if(Serial.available()>0){
-            String t = Serial.readStringUntil('\n');
-            Serial.print("valor");
-            Serial.print(t);
-            Serial.print("\n");
-            valor = false;
+       
+        if(Serial.available()){
+                
+                String t = Serial.readStringUntil('\n');
+                Serial.print(t);
+                valor = false;
+                Serial.print("\n");
         }
 
-        /*if(Serial.available()){
-            while(Serial.available() > 0){
-                Serial.print(char(Serial.read()));
-            }
-        } */
     }
     else if (opc == '2'){
         // funcao para ver log
         EEPROMleitura();
         valor = false;
     }
+
+
 }
 
 }
@@ -104,8 +110,14 @@ void EEPROMescreve(char *p,int i , int j){
     EEPROM.write(i, '\n');
 }
 
+void EEPROMlimpa(){
+  for(int i = 0 ; i < EEPROM.length() ; i++){
+    EEPROM.write(i,0);
+  }
+}
+
 void EEPROMleitura(){
-    int i=200, j = 1;
+    int i=EEPROM.length(), j = 1;
     while(j <= i){
         Serial.print(char(EEPROM.read(j)));
         j++;
@@ -124,6 +136,7 @@ void trocaSituacao(){
 
 void setup()
 {
+    EEPROMlimpa();
     Serial.begin(9600);
     Serial.print("[1] = PARA CONFIGURAR A HORA DE IRRIGACAO \n");
     Serial.print("[2] = PARA VER O LOG\n");
@@ -156,8 +169,9 @@ void loop()
     char opc = '0';
 
     if(Serial.available()){
+      
         // while(Serial.available() > 0){
-            Serial.readBytesUntil('\n', & opc, 1);
+            Serial.readBytesUntil('\n', &opc, 1);
             //}
 
         if (opc == '1' || opc == '2'){
