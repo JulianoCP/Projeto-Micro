@@ -10,13 +10,14 @@
 #define ledRed A2
 #define cpl_bit(y,bit)   (y^=(1<<bit)) //troca o estado l�gico do bit x da vari�vel Y
 
+int i = 0;
+int ligado = 0;
 int valor_analogico;
 const int buzzer = 7;
-int ligado = 0;
 int vetHora[] = {0, 0};
 const byte linhas = 4;  //4 linhas
 const byte colunas = 4; //4 colunas
-int i = 0;
+//i = EEPROM.read(0)
 
 char matrizteclado[linhas][colunas] = {
     {'1', '2', '3', 'A'},
@@ -25,7 +26,6 @@ char matrizteclado[linhas][colunas] = {
     {'*', '0', '#', 'D'}
 };
 
-//i = EEPROM.read(0)
 DS3231 RTC;
 RTCDateTime data;
 LiquidCrystal lcd(8, 9, 10, 11, 12, 13);
@@ -34,15 +34,17 @@ byte pinoscolunas[colunas] = {5, 4, 3}; //pinos utilizados nas colunas
 Keypad teclado = Keypad(makeKeymap(matrizteclado), pinoslinhas, pinoscolunas, linhas, colunas);
 
 
-void Menu(char opc){
+void Menu(char opc,bool valor){
+while(valor == true){
 
     if(opc == '1'){
         // definir horario de irrigaçao
-        if(Serial.available()){
+        if(Serial.available()>0){
             String t = Serial.readStringUntil('\n');
             Serial.print("valor");
             Serial.print(t);
             Serial.print("\n");
+            valor = false;
         }
 
         /*if(Serial.available()){
@@ -50,21 +52,24 @@ void Menu(char opc){
                 Serial.print(char(Serial.read()));
             }
         } */
-
     }
     else if (opc == '2'){
         // funcao para ver log
+        EEPROMleitura();
+        valor = false;
     }
+}
 
 }
 
 
 void percentUmd(int valor_analogico){
-    float x = ((-1)*(valor_analogico-1000))/1000.0;
+    float x = 100*(((-1)*(valor_analogico-1000))/1000.0);
     lcd.setCursor(2, 0);
+    //lcd.print("                ");
     lcd.print("Umidade:");
     lcd.print(x);
-    lcd.print("%");
+    lcd.print("%     ");
 }
 
 void horaDigitada(int* vetHora){
@@ -77,7 +82,6 @@ void buzzerLiga(){
     tone(buzzer, 2500);
     delay(500);
     noTone(buzzer);
-    delay(1000);
 }
 
 void buzzerDesliga(){
@@ -100,8 +104,8 @@ void EEPROMescreve(char *p,int i , int j){
     EEPROM.write(i, '\n');
 }
 
-void EEPROMleitura(char *p,int i, int j){
-    j = 1;
+void EEPROMleitura(){
+    int i=200, j = 1;
     while(j <= i){
         Serial.print(char(EEPROM.read(j)));
         j++;
@@ -112,17 +116,10 @@ void EEPROMleitura(char *p,int i, int j){
 }
 
 void trocaSituacao(){
-    //cpl_bit(PORTD,motor);
-    if(digitalRead(ledRed) == HIGH && digitalRead(ledGreen) == LOW){
-      digitalWrite(ledRed,LOW);
-      digitalWrite(ledGreen,HIGH);      
-    }
-    else if (digitalRead(ledRed) != HIGH && digitalRead(ledGreen) != LOW){
-      digitalWrite(ledRed,HIGH);
-      digitalWrite(ledGreen,LOW);      
-    }
-    //cpl_bit(PORTC,ledRed);
-    //cpl_bit(PORTC,ledGreen);
+    digitalWrite(ledRed,!digitalRead(ledRed));
+    digitalWrite(ledGreen,!digitalRead(ledGreen)); 
+    //digitalWrite(motor,!digitalRead(motor));
+    ligado = !ligado;
 }
 
 void setup()
@@ -131,17 +128,14 @@ void setup()
     Serial.print("[1] = PARA CONFIGURAR A HORA DE IRRIGACAO \n");
     Serial.print("[2] = PARA VER O LOG\n");
 
-
     pinMode(pino_sinal_analogico, INPUT);
     pinMode(motor, OUTPUT); // bomba
     pinMode(buzzer, OUTPUT);
     pinMode(ledGreen, OUTPUT);
     pinMode(ledRed, OUTPUT);
 
-
-    digitalWrite(motor, LOW);
+    digitalWrite(motor, HIGH);
     digitalWrite(ledRed, HIGH);
-
 
     lcd.begin(16, 2);
     RTC.begin();
@@ -150,7 +144,6 @@ void setup()
 
 void loop()
 {
-    // lcd.clear()
     data = RTC.getDateTime();
     valor_analogico = analogRead(pino_sinal_analogico);
     char apertatecla = teclado.getKey();
@@ -168,10 +161,9 @@ void loop()
             //}
 
         if (opc == '1' || opc == '2'){
-            Menu(opc);
+            Menu(opc,true);
         }
     }
-    // char opc = char(Serial.read())
 
 
     if (apertatecla) {
@@ -185,7 +177,7 @@ void loop()
             }
 
             horaDigitada(vetHora);
-            delay(200);
+            delay(100);
             lcd.print("               ");
         }
 
@@ -197,17 +189,23 @@ void loop()
             }
 
             horaDigitada(vetHora);
-            delay(200);
+            delay(100);
             lcd.print("               ");
         }
 
         else if(apertatecla == '3'){
 
-            // lcd.clear()
+            lcd.print("Hora definida");
+            delay(1000);
+            lcd.setCursor(2,1);
+            lcd.print("               ");
+            delay(500);
+            lcd.setCursor(2,1);
             lcd.print("Hora : ");
             horaDigitada(vetHora);
-
-            // Aguarda 1 segundo e repete o processo
+            delay(2000);
+            lcd.setCursor(2,1);
+            lcd.print("               ");
             delay(1000);
         }
 
@@ -217,7 +215,8 @@ void loop()
         lcd.setCursor(2, 1);
         lcd.print("ta na hora");
         delay(1000);
-        lcd.clear();
+        lcd.setCursor(2, 1);        
+        lcd.print("               ");
     }
 
     // Solo umido, acende o led verde
@@ -227,7 +226,6 @@ void loop()
         if (ligado == 0)
         {
             trocaSituacao();
-            ligado = 1;
             buzzerLiga();
 
             int j = 0;
@@ -245,7 +243,6 @@ void loop()
         if (ligado == 1)
         {
             trocaSituacao();
-            ligado = 0;
             buzzerDesliga();
 
             int j = 0;
